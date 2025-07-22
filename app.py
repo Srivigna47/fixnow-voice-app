@@ -1,27 +1,28 @@
 import streamlit as st
-import speech_recognition as sr
+import whisper
+import tempfile
+import os
 
-st.set_page_config(page_title="FixNow – Voice Complaint App", page_icon="🎤")
+st.set_page_config(page_title="FixNow – Voice Complaint App")
 
-st.title("🎤 FixNow – Voice-Based Complaint App")
-st.write("Speak up and let us fix your local problems!")
+st.title("🎤 FixNow – Voice Complaint App")
 
-if st.button("🎙 Start Recording"):
-    recognizer = sr.Recognizer()
-    with sr.Microphone() as source:
-        st.info("Listening... Please speak clearly.")
-        try:
-            audio = recognizer.listen(source, timeout=5)
-            text = recognizer.recognize_google(audio)
-            st.success("You said: " + text)
+uploaded_audio = st.file_uploader("Upload your complaint audio (WAV/MP3)", type=["wav", "mp3", "m4a"])
 
-            # Optional: Save to file
-            with open("complaints.txt", "a") as f:
-                f.write(text + "\n")
+if uploaded_audio is not None:
+    st.audio(uploaded_audio)
 
-        except sr.UnknownValueError:
-            st.error("Could not understand your voice.")
-        except sr.RequestError:
-            st.error("Speech service not available.")
-        except Exception as e:
-            st.error(f"Error: {e}")
+    # Save the uploaded file to a temp file
+    with tempfile.NamedTemporaryFile(delete=False, suffix=".mp3") as tmp:
+        tmp.write(uploaded_audio.read())
+        tmp_path = tmp.name
+
+    st.info("Transcribing...")
+
+    model = whisper.load_model("base")
+    result = model.transcribe(tmp_path)
+
+    st.success("Transcription complete!")
+    st.text_area("📝 Complaint Text", result["text"], height=200)
+
+    os.remove(tmp_path)
