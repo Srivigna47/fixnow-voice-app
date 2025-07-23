@@ -1,28 +1,40 @@
 import streamlit as st
-import whisper
-import tempfile
+import openai
 import os
+import tempfile
 
-st.set_page_config(page_title="FixNow – Voice Complaint App")
+# Title
+st.title("FixNow – Voice Complaint Transcription")
 
-st.title("🎤 FixNow – Voice Complaint App")
+# Upload audio
+st.header("Upload your complaint audio (WAV/MP3)")
+uploaded_file = st.file_uploader("Drag and drop file here", type=["wav", "mp3", "m4a"])
 
-uploaded_audio = st.file_uploader("Upload your complaint audio (WAV/MP3)", type=["wav", "mp3", "m4a"])
-
-if uploaded_audio is not None:
-    st.audio(uploaded_audio)
-
-    # Save the uploaded file to a temp file
-    with tempfile.NamedTemporaryFile(delete=False, suffix=".mp3") as tmp:
-        tmp.write(uploaded_audio.read())
-        tmp_path = tmp.name
-
+# Transcribe section
+if uploaded_file is not None:
+    st.audio(uploaded_file, format="audio/wav")
     st.info("Transcribing...")
 
-    model = whisper.load_model("base")
-    result = model.transcribe(tmp_path)
+    # Save file temporarily
+    with tempfile.NamedTemporaryFile(delete=False) as temp_audio:
+        temp_audio.write(uploaded_file.read())
+        temp_audio_path = temp_audio.name
 
-    st.success("Transcription complete!")
-    st.text_area("📝 Complaint Text", result["text"], height=200)
+    try:
+        # Load API key from Streamlit secrets
+        openai.api_key = st.secrets["OPENAI_API_KEY"]
 
-    os.remove(tmp_path)
+        # Use Whisper API
+        with open(temp_audio_path, "rb") as audio_file:
+            transcript = openai.Audio.transcribe("whisper-1", audio_file)
+
+        # Display result
+        st.success("Transcription Complete:")
+        st.write(transcript["text"])
+
+    except Exception as e:
+        st.error(f"Error: {e}")
+
+    # Delete temp file
+    os.remove(temp_audio_path)
+
