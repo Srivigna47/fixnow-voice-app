@@ -1,1 +1,7 @@
+<<<<<<< HEAD
 streamlitwhispertorchaudio  
+=======
+streamlit
+SpeechRecognition
+PyAudio
+>>>>>>> b6d216c4588238c462c8f69d4e321966b99d14d7
